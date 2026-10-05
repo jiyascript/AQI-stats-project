@@ -1,0 +1,37 @@
+column,group,unit,what_it_is,watch_out_for
+sensor_id,Who and when,—,The sensor's ID code. Unique per device.,
+sensor_name,Who and when,—,"Readable sensor name: neighborhood + unit number, e.g. 'Rogers Park 2'.",
+ts_utc,Who and when,UTC timestamp,"Start of the hour, in UTC. This is the column weather and traffic were joined on.",Don't use it for hour-of-day questions — it's 5-6 hours off local time.
+ts_local,Who and when,Chicago timestamp,The same moment in Chicago time. Use this for anything about time of day or the work week.,DST days have 23 or 25 local hours.
+lat,Who and when,degrees,Sensor latitude.,Never changes for a given sensor.
+lon,Who and when,degrees,Sensor longitude.,Never changes for a given sensor.
+no2,What was measured,ppb,Nitrogen dioxide for this hour. The main traffic-related pollutant.,"Comes from a calibration model, not a raw reading. Identical sensors side by side disagree by 1.6-3.8 ppb, so that's the noise floor."
+pm25,What was measured,ug/m3,"Fine particle pollution (smoke, dust, soot) for this hour.",Huge right tail: max 487. Use log_pm25 instead for most work.
+log_pm25,What was measured,log scale,log(1 + pm25). The version to actually model.,
+no2_aqi,What was measured,AQI 0-500,Official EPA air quality index for NO2.,Never went above 100 in 14 months. Almost constant — little use as an outcome.
+pm25_aqi,What was measured,AQI 0-500,Official EPA air quality index for PM2.5 (NowCast method).,"Above 100 in under 1% of hours, nearly all in 3 episodes. Too rare to predict."
+no2_lag1,Past values,ppb,NO2 at this sensor one hour ago. The single best predictor of NO2 now.,Only valid where hours_since_obs == 0.
+no2_lag24,Past values,ppb,NO2 at this sensor at the same hour yesterday. Captures the daily rhythm.,Only valid where hours_since_obs == 0.
+log_pm25_lag1,Past values,log scale,log PM2.5 one hour ago. Even more persistent than NO2.,Only valid where hours_since_obs == 0.
+log_pm25_lag24,Past values,log scale,log PM2.5 at the same hour yesterday.,Only valid where hours_since_obs == 0.
+hour,Time,0-23,Hour of day in Chicago time. 0 = midnight.,Already acts as a stand-in for traffic — any traffic variable has to beat it.
+dow,Time,0-6,"Day of week. 0 = Monday, 6 = Sunday.","Weekend = dow >= 5, if you want that as its own flag."
+month,Time,1-12,Calendar month. Stands in for season and whether trees have leaves.,
+is_holiday,Time,True/False,"US federal holiday, by local date.","July 4 2026 falls on a Saturday, so July 3 is the observed holiday. Both are flagged."
+no2_city,Rest of the city,ppb,Median NO2 across all sensors reporting this hour. Explains ~58% of NO2 variation.,"SAME hour, so it already contains the answer. Fine for EDA, cheating in a forecast."
+log_pm25_city,Rest of the city,log scale,Median log PM2.5 across all sensors this hour. Explains ~84% of PM2.5 variation.,Same warning as no2_city.
+n_reporting,Rest of the city,count,How many sensors reported this hour. Doubles as a network-health check.,"Drops from 283 to 165 during the outage, 28 Jul - 13 Aug 2026."
+temp,Weather,Celsius,Air temperature at O'Hare airport.,Same value for every sensor in an hour.
+rhum,Weather,%,Relative humidity at O'Hare.,Also affects the sensors themselves — low-cost PM sensors read high in humid air.
+wspd_ms,Weather,m/s,Wind speed. The main thing that disperses pollution.,Low wind (under ~2 m/s) is when pollution builds up.
+wdir,Weather,degrees,"Direction the wind is coming FROM. 0 = north, 90 = east.",DO NOT put this in a model. 359 and 1 are neighbours but look 358 apart. Use wind_u.
+wind_u,Weather,m/s,East-west wind component. Positive = blowing toward the east.,This is the model-safe version of wind direction.
+prcp,Weather,mm,Rain in the past hour. Washes particles out of the air.,
+region_id,Traffic,1-29,Which of Chicago's 29 traffic regions the sensor sits in.,"Regions are rectangles, so a few sensors land in the wrong one (e.g. Brighton Park -> 'Lawndale')."
+traffic_speed,Traffic,mph,Average vehicle speed in that region this hour. LOW speed = congestion.,EMPTY after 30 Apr 2026 — the city stopped publishing. Only ~62% of rows have it.
+canopy_pct,Around the sensor,% of tract,"Tree cover, from 2023 aerial imagery.","Covers the whole census tract, not the block around the sensor."
+impervious_pct,Around the sensor,% of tract,"Paved and built-over surface: roads, roofs, parking.",Strongly opposite to canopy_pct — they'll fight each other in a model.
+dist_downtown_m,Around the sensor,metres,Straight-line distance to the Loop (State & Madison).,"Tangled up with canopy, pavement and roads — downtown has less of everything green."
+road_len_expwy_500,Around the sensor,metres,Metres of expressway within 500 m of the sensor.,Zero for most sensors — only some sit near an expressway.
+industrial_m2_500,Around the sensor,m2,Area zoned for manufacturing within 500 m.,"This is zoning permission, not measured emissions. A zoned lot may be empty."
+hours_since_obs,Data quality,hours,How many hours since this sensor last had a real reading. 0 = this hour has one.,"THE GUARD COLUMN. Filter to 0 for anything using lags, or stale values look real."
